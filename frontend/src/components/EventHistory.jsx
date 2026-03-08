@@ -1,3 +1,6 @@
+import { motion } from "framer-motion";
+import { Clock, RefreshCw, History } from "lucide-react";
+
 function formatDate(value) {
   if (!value) return "N/A";
   const date = new Date(value);
@@ -6,53 +9,74 @@ function formatDate(value) {
 }
 
 function severityBadgeClass(severity) {
-  if (severity === "HIGH") return "bg-red-100 text-red-700";
-  if (severity === "MEDIUM") return "bg-yellow-100 text-yellow-700";
-  return "bg-green-100 text-green-700";
+  if (severity === "HIGH") return "bg-red-500/20 text-red-500 border border-red-500/30";
+  if (severity === "MEDIUM") return "bg-yellow-500/20 text-yellow-500 border border-yellow-500/30";
+  return "bg-green-500/20 text-green-500 border border-green-500/30";
 }
 
 export default function EventHistory({ events, loading, error, onRefresh }) {
   return (
-    <section className="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-5 col-span-3 border dark:border-gray-800">
-      <div className="flex justify-between mb-4">
-        <h2 className="font-semibold text-lg">Event History</h2>
+    <motion.section
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+      className="glass rounded-2xl p-4 sm:p-5 group hover:border-primary/30 transition-all duration-500"
+    >
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <History className="w-4 h-4 text-primary" />
+          </div>
+          <h2 className="font-display font-semibold text-lg">Event History</h2>
+        </div>
 
         <button
           onClick={onRefresh}
           disabled={loading}
-          className="px-3 py-1 bg-gray-200 dark:bg-gray-800 rounded-md text-sm disabled:opacity-60"
+          className="px-3 py-1.5 bg-[hsl(var(--muted))] rounded-lg text-sm disabled:opacity-60 flex items-center gap-1.5 hover:bg-[hsl(var(--border))] transition w-full sm:w-auto"
         >
+          <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
           {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
-      {error ? <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p> : null}
+      {error ? <p className="text-sm text-destructive mb-3">{error}</p> : null}
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-[hsl(var(--border))]">
         <table className="w-full text-sm">
-          <thead className="border-b dark:border-gray-800 text-left">
+          <thead className="bg-[hsl(var(--muted))]">
             <tr>
-              <th className="py-2">Timestamp</th>
-              <th>Duration</th>
-              <th>EAR</th>
-              <th>Severity</th>
+              <th className="py-2.5 px-3 text-left font-medium text-muted-foreground">Timestamp</th>
+              <th className="py-2.5 px-3 text-left font-medium text-muted-foreground">Duration</th>
+              <th className="py-2.5 px-3 text-left font-medium text-muted-foreground">EAR</th>
+              <th className="py-2.5 px-3 text-left font-medium text-muted-foreground">Severity</th>
             </tr>
           </thead>
 
           <tbody>
             {events.length === 0 ? (
-              <tr className="border-b dark:border-gray-800">
-                <td className="py-2" colSpan={4}>
+              <tr className="border-t border-[hsl(var(--border))]">
+                <td className="py-6 text-center text-muted-foreground" colSpan={4}>
                   {loading ? "Loading events..." : "No events recorded"}
                 </td>
               </tr>
             ) : (
-              events.map((event) => (
-                <tr key={event.id} className="border-b dark:border-gray-800">
-                  <td className="py-2">{formatDate(event.created_at)}</td>
-                  <td>{Number(event.duration_seconds ?? 0).toFixed(1)}s</td>
-                  <td>{Number(event.ear_value ?? 0).toFixed(3)}</td>
-                  <td>
+              events.map((event, i) => (
+                <motion.tr
+                  key={event.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="border-t border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))/50]"
+                >
+                  <td className="py-2.5 px-3 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatDate(event.created_at)}</span>
+                  </td>
+                  <td className="py-2.5 px-3 font-mono text-xs sm:text-sm">{Number(event.duration_seconds ?? 0).toFixed(1)}s</td>
+                  <td className="py-2.5 px-3 font-mono text-xs sm:text-sm">{Number(event.ear_value ?? 0).toFixed(3)}</td>
+                  <td className="py-2.5 px-3">
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${severityBadgeClass(
                         event.severity
@@ -61,12 +85,12 @@ export default function EventHistory({ events, loading, error, onRefresh }) {
                       {event.severity || "LOW"}
                     </span>
                   </td>
-                </tr>
+                </motion.tr>
               ))
             )}
           </tbody>
         </table>
       </div>
-    </section>
+    </motion.section>
   );
 }

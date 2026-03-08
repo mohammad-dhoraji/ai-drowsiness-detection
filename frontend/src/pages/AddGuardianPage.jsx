@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Shield, Plus } from "lucide-react";
 import { getMyGuardians, linkGuardian } from "../services/guardianService";
 
 export default function AddGuardianPage({ accessToken }) {
@@ -47,13 +49,26 @@ export default function AddGuardianPage({ accessToken }) {
   };
 
   return (
-    <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
-        Link Guardian
-      </h2>
-      <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-        Link a guardian account using guardian email.
-      </p>
+    <motion.section
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+      className="glass rounded-2xl p-4 sm:p-6 group hover:border-primary/30 transition-all duration-500"
+    >
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Shield className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-lg sm:text-xl font-display font-semibold">
+            Link Guardian
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Connect a guardian to receive alerts
+          </p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="mt-4 flex flex-col sm:flex-row gap-3">
         <input
@@ -62,44 +77,45 @@ export default function AddGuardianPage({ accessToken }) {
           onChange={(event) => setGuardianEmail(event.target.value)}
           placeholder="guardian@email.com"
           required
-          className="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2.5 sm:py-2 text-sm outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
         />
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium disabled:opacity-70"
+          className="rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2.5 text-sm font-medium disabled:opacity-70 flex items-center justify-center gap-2 transition min-h-[44px]"
         >
+          <Plus className="w-4 h-4" />
           {loading ? "Adding..." : "Add Guardian"}
         </button>
       </form>
 
       {message ? (
-        <p className="mt-3 text-sm text-green-600 dark:text-green-400">{message}</p>
+        <p className="mt-3 text-sm text-green-500">{message}</p>
       ) : null}
       {error ? (
-        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="mt-3 text-sm text-destructive">{error}</p>
       ) : null}
 
-      <div className="mt-5">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">My Guardians</h3>
+      <div className="mt-6">
+        <h3 className="text-sm font-semibold mb-3">My Guardians</h3>
         {listLoading ? (
-          <p className="text-sm text-gray-500 mt-2">Loading...</p>
+          <p className="text-sm text-muted-foreground">Loading...</p>
         ) : guardians.length === 0 ? (
-          <p className="text-sm text-gray-500 mt-2">No guardians linked yet.</p>
+          <p className="text-sm text-muted-foreground">No guardians linked yet.</p>
         ) : (
-          <ul className="mt-2 space-y-2">
+          <ul className="space-y-2">
             {guardians.map((guardian) => (
               <li
                 key={guardian.id}
-                className="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 text-sm"
+                className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3"
               >
-                <p className="font-medium text-gray-900 dark:text-gray-100">{guardian.name || "Guardian"}</p>
-                <p className="text-gray-600 dark:text-gray-400">{guardian.email}</p>
+                <p className="font-medium">{guardian.name || "Guardian"}</p>
+                <p className="text-sm text-muted-foreground">{guardian.email}</p>
               </li>
             ))}
           </ul>
         )}
       </div>
-    </section>
+    </motion.section>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import GoogleButton from "./GoogleButton";
 
 export default function AuthForm({
@@ -42,13 +43,20 @@ export default function AuthForm({
   };
 
   return (
-    <div className="space-y-4">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="space-y-4"
+    >
       {/* Role Toggle */}
-      <div className="flex bg-black/40 rounded-lg p-1 mb-6">
+      <div className="flex bg-[hsl(var(--muted))] rounded-lg p-1 mb-4 sm:mb-6">
         <button
           onClick={() => handleRoleChange("driver")}
           className={`flex-1 py-2 rounded-md text-sm transition ${
-            role === "driver" ? "bg-blue-600 text-white" : "text-gray-400"
+            role === "driver"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Driver
@@ -57,7 +65,9 @@ export default function AuthForm({
         <button
           onClick={() => handleRoleChange("guardian")}
           className={`flex-1 py-2 rounded-md text-sm transition ${
-            role === "guardian" ? "bg-blue-600 text-white" : "text-gray-400"
+            role === "guardian"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Guardian
@@ -66,17 +76,16 @@ export default function AuthForm({
 
       <GoogleButton onClick={onGoogle} />
 
-      <div className="flex items-center my-6">
-        <div className="flex-1 h-px bg-gray-700"></div>
-        <span className="px-3 text-gray-400 text-sm">OR</span>
-        <div className="flex-1 h-px bg-gray-700"></div>
+      <div className="flex items-center my-4 sm:my-6">
+        <div className="flex-1 h-px bg-[hsl(var(--border))]"></div>
+        <span className="px-3 text-muted-foreground text-sm">OR</span>
+        <div className="flex-1 h-px bg-[hsl(var(--border))]"></div>
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit}>
-
         {/* Email */}
         <div>
-          <label className="block text-sm text-gray-400 mb-1">
+          <label className="block text-sm text-muted-foreground mb-1">
             Email
           </label>
 
@@ -84,14 +93,14 @@ export default function AuthForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg px-3 py-2.5 sm:py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
         </div>
 
         {/* Password */}
         <div>
-          <label className="block text-sm text-gray-400 mb-1">
+          <label className="block text-sm text-muted-foreground mb-1">
             Password
           </label>
 
@@ -99,40 +108,41 @@ export default function AuthForm({
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg px-3 py-2.5 sm:py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
         </div>
 
         {error && (
-          <p className="text-sm text-red-400">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2 bg-blue-600 hover:bg-blue-700 transition rounded-lg font-medium text-white"
+          className="w-full py-2.5 bg-primary hover:bg-primary/90 transition rounded-lg font-medium text-primary-foreground"
         >
           {loading
             ? "Loading..."
             : mode === "login"
-            ? "login"
+            ? "Login"
             : "Create Account"}
         </button>
       </form>
 
-      <p className="text-sm text-gray-400 mt-6 text-center">
+      <p className="text-sm text-muted-foreground mt-4 sm:mt-6 text-center">
         {mode === "login"
           ? "Don't have an account?"
           : "Already have an account?"}
 
         <button
           onClick={toggleMode}
-          className="ml-2 text-blue-500 hover:underline"
+          className="ml-1 sm:ml-2 text-primary hover:underline"
         >
-          {mode === "login" ? "Sign Up" : "login"}
+          {mode === "login" ? "Sign Up" : "Login"}
         </button>
       </p>
-    </div>
+    </motion.div>
   );
 }
+

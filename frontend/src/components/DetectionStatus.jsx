@@ -1,11 +1,14 @@
+import { motion } from "framer-motion";
+import { Eye, Clock, AlertTriangle, Activity } from "lucide-react";
+
 function getSeverityStyles(severity) {
   if (severity === "HIGH") {
-    return "bg-red-100 text-red-700";
+    return "bg-red-500/20 text-red-500 border border-red-500/30";
   }
   if (severity === "MEDIUM") {
-    return "bg-yellow-100 text-yellow-700";
+    return "bg-yellow-500/20 text-yellow-500 border border-yellow-500/30";
   }
-  return "bg-green-100 text-green-700";
+  return "bg-green-500/20 text-green-500 border border-green-500/30";
 }
 
 export default function DetectionStatus({ detection, error, cameraOn }) {
@@ -25,34 +28,51 @@ export default function DetectionStatus({ detection, error, cameraOn }) {
       : "0.0";
 
   return (
-    <section className="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-5 border dark:border-gray-800">
-      <h2 className="font-semibold text-lg mb-4">Detection Status</h2>
+    <motion.section
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      className="glass rounded-2xl p-4 sm:p-5 group hover:border-primary/30 transition-all duration-500 h-full"
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Activity className="w-4 h-4 text-primary" />
+        </div>
+        <h2 className="font-display font-semibold text-lg">Detection Status</h2>
+      </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div>
-          <p className="text-sm text-gray-500">Eye Status</p>
-          <p className="font-semibold">{eyeStatus}</p>
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <Eye className="w-3 h-3" /> Eye Status
+          </p>
+          <p className="font-semibold text-sm sm:text-base">{eyeStatus}</p>
         </div>
 
         <div>
-          <p className="text-sm text-gray-500">EAR Value</p>
-          <p className="font-mono">{ear}</p>
+          <p className="text-sm text-muted-foreground">EAR Value</p>
+          <p className="font-mono text-lg">{ear}</p>
         </div>
 
         <div>
-          <p className="text-sm text-gray-500">Closure Duration</p>
-          <p className="font-mono">{duration}s</p>
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <Clock className="w-3 h-3" /> Closure Duration
+          </p>
+          <p className="font-mono text-lg">{duration}s</p>
         </div>
 
         <div>
-          <p className="text-sm text-gray-500">Alert Level</p>
-          <span className={`px-3 py-1 rounded-full text-sm ${getSeverityStyles(severity)}`}>
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" /> Alert Level
+          </p>
+          <span className={`inline-flex px-3 py-1.5 rounded-full text-sm mt-1 ${getSeverityStyles(severity)}`}>
             {severity}
           </span>
         </div>
 
-        {error ? <p className="text-sm text-red-600 dark:text-red-400">{error}</p> : null}
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
       </div>
-    </section>
+    </motion.section>
   );
 }

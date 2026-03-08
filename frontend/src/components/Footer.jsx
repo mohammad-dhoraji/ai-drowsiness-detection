@@ -1,8 +1,15 @@
+import { motion } from "framer-motion";
+
 export default function Footer() {
   return (
-    <footer className="text-center text-sm text-gray-500 py-6">
+    <motion.footer
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.5 }}
+      className="text-center text-sm text-muted-foreground py-6 border-t border-[hsl(var(--border))]"
+    >
       <p>Final Year Engineering Project • 2026</p>
-      <p>FastAPI • MediaPipe • Supabase • Computer Vision</p>
-    </footer>
+      <p className="text-xs mt-1">FastAPI • MediaPipe • Supabase • Computer Vision</p>
+    </motion.footer>
   );
 }

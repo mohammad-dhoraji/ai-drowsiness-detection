@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import Header from "./components/Header";
 import CameraPanel from "./components/CameraPanel";
@@ -7,7 +6,6 @@ import DetectionStatus from "./components/DetectionStatus";
 import EventHistory from "./components/EventHistory";
 import AlertModal from "./components/AlertModal";
 import Footer from "./components/Footer";
-import UnifiedAuthPage from "./pages/UnifiedAuthPage";
 import AddGuardianPage from "./pages/AddGuardianPage";
 import GuardianDashboardPage from "./pages/GuardianDashboardPage";
 import useCamera from "./hooks/useCamera";
@@ -15,9 +13,6 @@ import { useAuth } from "./context/useAuth";
 import { getMe } from "./services/authService";
 import { analyzeFrame } from "./services/detectionService";
 import { getEvents } from "./services/logsService";
-import { supabase } from "./lib/supabaseClient";
-import LandingPage from "./landing/pages/LandingPage";
-import ProtectedRoute from "./components/ProtectedRoute";
 
 const DETECTION_INTERVAL_MS = 400;
 
@@ -37,74 +32,7 @@ function createSessionId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-const DEV_BYPASS_AUTH = false;
-
-function OAuthCallback() {
-  const navigate = useNavigate();
-  const { initializing } = useAuth();
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const handleOAuthCallback = async () => {
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          setError(sessionError.message);
-          setLoading(false);
-          return;
-        }
-
-        if (session) {
-          navigate("/", { replace: true });
-        } else if (!initializing) {
-          navigate("/auth", { replace: true });
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    handleOAuthCallback();
-  }, [navigate, initializing]);
-
-  if (initializing || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Completing sign in...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))]">
-        <div className="text-center p-6 glass rounded-xl">
-          <p className="text-destructive mb-4">Authentication error: {error}</p>
-          <button
-            onClick={() => navigate("/auth", { replace: true })}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-          >
-            Back to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return <Navigate to="/" replace />;
-}
-
-function ProtectedApp() {
+function DashboardPage() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [detection, setDetection] = useState(DEFAULT_DETECTION);
   const [detectionError, setDetectionError] = useState("");
@@ -116,7 +44,7 @@ function ProtectedApp() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState("");
 
-  const { isAuthenticated, accessToken, user, signOut } = useAuth();
+  const { accessToken, user, signOut } = useAuth();
 
   const { videoRef, cameraOn, cameraError, startCamera, stopCamera, captureFrame } = useCamera();
 
@@ -220,16 +148,16 @@ function ProtectedApp() {
   }, [accessToken, isDriver]);
 
   useEffect(() => {
-    if (!isAuthenticated || !isDriver) {
+    if (!isDriver) {
       stopAlarm();
       return;
     }
 
     loadHistory();
-  }, [isAuthenticated, isDriver, loadHistory, stopAlarm]);
+  }, [isDriver, loadHistory, stopAlarm]);
 
   useEffect(() => {
-    if (!cameraOn || !isAuthenticated || !accessToken || !isDriver) {
+    if (!cameraOn || !accessToken || !isDriver) {
       if (detectionIntervalRef.current) {
         clearInterval(detectionIntervalRef.current);
       }
@@ -267,7 +195,7 @@ function ProtectedApp() {
     }, DETECTION_INTERVAL_MS);
 
     return () => clearInterval(detectionIntervalRef.current);
-  }, [cameraOn, isAuthenticated, accessToken, captureFrame, isDriver, startAlarm]);
+  }, [cameraOn, accessToken, captureFrame, isDriver, startAlarm]);
 
   const handleLogout = async () => {
     stopCamera();
@@ -294,7 +222,6 @@ function ProtectedApp() {
       <Header
         status={backendStatus}
         userEmail={user?.email}
-        isAuthenticated={isAuthenticated}
         onLogout={handleLogout}
       />
 
@@ -351,65 +278,5 @@ function ProtectedApp() {
   );
 }
 
-function App() {
-  const { initializing, isAuthenticated } = useAuth();
-
-  // Wrapper component for GuardianDashboardPage to get accessToken
-  const GuardianWrapper = () => {
-    const { accessToken: token } = useAuth();
-    return <GuardianDashboardPage accessToken={token} />;
-  };
-
-  if (initializing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading session...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* OAuth callback route */}
-        <Route path="/auth/callback" element={<OAuthCallback />} />
-        
-        {/* Landing page route - accessible to everyone */}
-        <Route path="/" element={<LandingPage />} />
-        
-        {/* Auth route - accessible when not authenticated */}
-        <Route 
-          path="/auth" 
-          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <UnifiedAuthPage />} 
-        />
-        
-        {/* Protected routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <ProtectedApp />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/guardian"
-          element={
-            <ProtectedRoute>
-              <GuardianWrapper />
-            </ProtectedRoute>
-          }
-        />
-        
-        {/* Fallback to landing page */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-export default App;
+export default DashboardPage;
 
