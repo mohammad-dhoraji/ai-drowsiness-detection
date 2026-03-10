@@ -1,4 +1,4 @@
-import { AnimatePresence } from "framer-motion";
+import {motion,  AnimatePresence } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
 
 export default function AlertModal({ visible, severity = "HIGH", onClose }) {

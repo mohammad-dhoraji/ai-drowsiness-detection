@@ -127,3 +127,152 @@ drop trigger if exists on_auth_user_created_sync_profile on auth.users;
 create trigger on_auth_user_created_sync_profile
 after insert on auth.users
 for each row execute function public.sync_profile_from_auth();
+
+-- Row Level Security policies for client-side access with authenticated JWTs.
+-- Backend service-role writes bypass RLS automatically.
+alter table public.profiles enable row level security;
+alter table public.driver_guardians enable row level security;
+alter table public.sessions enable row level security;
+alter table public.drowsiness_events enable row level security;
+alter table public.guardian_notifications enable row level security;
+
+drop policy if exists "profiles_select_own" on public.profiles;
+create policy "profiles_select_own"
+on public.profiles
+for select
+to authenticated
+using (auth.uid() = id);
+
+drop policy if exists "profiles_insert_own" on public.profiles;
+create policy "profiles_insert_own"
+on public.profiles
+for insert
+to authenticated
+with check (auth.uid() = id);
+
+drop policy if exists "profiles_update_own" on public.profiles;
+create policy "profiles_update_own"
+on public.profiles
+for update
+to authenticated
+using (auth.uid() = id)
+with check (auth.uid() = id);
+
+drop policy if exists "driver_guardians_select_related" on public.driver_guardians;
+create policy "driver_guardians_select_related"
+on public.driver_guardians
+for select
+to authenticated
+using (auth.uid() = driver_id or auth.uid() = guardian_id);
+
+drop policy if exists "driver_guardians_insert_driver" on public.driver_guardians;
+create policy "driver_guardians_insert_driver"
+on public.driver_guardians
+for insert
+to authenticated
+with check (auth.uid() = driver_id);
+
+drop policy if exists "driver_guardians_delete_driver" on public.driver_guardians;
+create policy "driver_guardians_delete_driver"
+on public.driver_guardians
+for delete
+to authenticated
+using (auth.uid() = driver_id);
+
+drop policy if exists "sessions_select_driver_or_guardian" on public.sessions;
+create policy "sessions_select_driver_or_guardian"
+on public.sessions
+for select
+to authenticated
+using (
+  auth.uid() = driver_id
+  or exists (
+    select 1
+    from public.driver_guardians dg
+    where dg.driver_id = public.sessions.driver_id
+      and dg.guardian_id = auth.uid()
+  )
+);
+
+drop policy if exists "sessions_insert_driver" on public.sessions;
+create policy "sessions_insert_driver"
+on public.sessions
+for insert
+to authenticated
+with check (auth.uid() = driver_id);
+
+drop policy if exists "sessions_update_driver" on public.sessions;
+create policy "sessions_update_driver"
+on public.sessions
+for update
+to authenticated
+using (auth.uid() = driver_id)
+with check (auth.uid() = driver_id);
+
+drop policy if exists "events_select_driver_or_guardian" on public.drowsiness_events;
+create policy "events_select_driver_or_guardian"
+on public.drowsiness_events
+for select
+to authenticated
+using (
+  auth.uid() = driver_id
+  or exists (
+    select 1
+    from public.driver_guardians dg
+    where dg.driver_id = public.drowsiness_events.driver_id
+      and dg.guardian_id = auth.uid()
+  )
+);
+
+drop policy if exists "events_insert_driver" on public.drowsiness_events;
+create policy "events_insert_driver"
+on public.drowsiness_events
+for insert
+to authenticated
+with check (auth.uid() = driver_id);
+
+drop policy if exists "events_delete_driver" on public.drowsiness_events;
+create policy "events_delete_driver"
+on public.drowsiness_events
+for delete
+to authenticated
+using (auth.uid() = driver_id);
+
+drop policy if exists "notifications_select_related" on public.guardian_notifications;
+create policy "notifications_select_related"
+on public.guardian_notifications
+for select
+to authenticated
+using (auth.uid() = guardian_id or auth.uid() = driver_id);
+
+drop policy if exists "notifications_insert_driver" on public.guardian_notifications;
+create policy "notifications_insert_driver"
+on public.guardian_notifications
+for insert
+to authenticated
+with check (auth.uid() = driver_id);
+
+drop policy if exists "notifications_update_guardian" on public.guardian_notifications;
+create policy "notifications_update_guardian"
+on public.guardian_notifications
+for update
+to authenticated
+using (auth.uid() = guardian_id)
+with check (auth.uid() = guardian_id);
+
+-- Enable Postgres changes feed for realtime subscriptions used in frontend dashboards.
+do $$
+begin
+  alter publication supabase_realtime add table public.drowsiness_events;
+exception
+  when duplicate_object then null;
+end
+$$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.guardian_notifications;
+exception
+  when duplicate_object then null;
+end
+$$;

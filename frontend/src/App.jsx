@@ -34,7 +34,11 @@ function createSessionId() {
   if (crypto?.randomUUID) {
     return crypto.randomUUID();
   }
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const random = (Math.random() * 16) | 0;
+    const value = char === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
 const DEV_BYPASS_AUTH = false;
@@ -202,6 +206,7 @@ function ProtectedApp() {
 
   const isDriver = profile?.role === "driver";
   const isGuardian = profile?.role === "guardian";
+  const currentUserId = profile?.user_id || user?.id || null;
 
   const loadHistory = useCallback(async () => {
     if (!accessToken || !isDriver) return;
@@ -227,6 +232,34 @@ function ProtectedApp() {
 
     loadHistory();
   }, [isAuthenticated, isDriver, loadHistory, stopAlarm]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isDriver || !currentUserId) return undefined;
+
+    const channel = supabase
+      .channel(`drowsiness-events-${currentUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "drowsiness_events",
+          filter: `driver_id=eq.${currentUserId}`,
+        },
+        (payload) => {
+          const inserted = payload.new;
+          setHistoryItems((prev) => {
+            const deduped = prev.filter((item) => item.id !== inserted.id);
+            return [inserted, ...deduped].slice(0, 20);
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthenticated, isDriver, currentUserId]);
 
   useEffect(() => {
     if (!cameraOn || !isAuthenticated || !accessToken || !isDriver) {
@@ -334,7 +367,7 @@ function ProtectedApp() {
 
       {!profileError && isGuardian ? (
         <main>
-          <GuardianDashboardPage accessToken={accessToken} />
+          <GuardianDashboardPage accessToken={accessToken} currentUserId={currentUserId} />
         </main>
       ) : null}
 
@@ -356,8 +389,8 @@ function App() {
 
   // Wrapper component for GuardianDashboardPage to get accessToken
   const GuardianWrapper = () => {
-    const { accessToken: token } = useAuth();
-    return <GuardianDashboardPage accessToken={token} />;
+    const { accessToken: token, user } = useAuth();
+    return <GuardianDashboardPage accessToken={token} currentUserId={user?.id || null} />;
   };
 
   if (initializing) {
@@ -412,4 +445,3 @@ function App() {
 }
 
 export default App;
-

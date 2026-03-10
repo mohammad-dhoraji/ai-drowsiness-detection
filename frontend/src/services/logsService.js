@@ -13,3 +13,17 @@ export function getSummary(token, params = {}) {
     query: params,
   });
 }
+
+export function getGuardianNotifications(token, params = {}) {
+  return apiRequest("/logs/guardian-notifications", {
+    token,
+    query: params,
+  });
+}
+
+export function markGuardianNotificationRead(token, notificationId) {
+  return apiRequest(`/logs/guardian-notifications/${notificationId}/read`, {
+    method: "PATCH",
+    token,
+  });
+}
